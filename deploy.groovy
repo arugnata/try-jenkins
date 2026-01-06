@@ -29,16 +29,13 @@ pipeline {
             }
         }
 
-
         stage('Checkout Code from GitHub') {
             steps {
                 sh '''
                 rm -rf repo
                 git clone -b main https://github.com/arugnata/try-jenkins.git repo
                 '''
-    }
-}
-        
+            }
         }
 
         stage('Configure SSH') {
@@ -77,5 +74,6 @@ pipeline {
                 '''
             }
         }
-    }
-}
+    } // end stages
+} // end pipeline
+
