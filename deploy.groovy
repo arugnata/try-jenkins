@@ -44,7 +44,7 @@ pipeline {
                 mkdir -p ~/.ssh
                 chmod 700 ~/.ssh
 
-                # Correct SSH config to avoid host verification errors
+                # SSH config to skip host verification
                 echo -e "Host *\\n\\tStrictHostKeyChecking no\\n\\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
                 chmod 600 ~/.ssh/config
 
@@ -69,11 +69,12 @@ pipeline {
         stage('Deploy Code to Server') {
             steps {
                 sh '''
-                # Sync repo to EC2 using rsync with correct SSH options
-                rsync -avz --delete -e "ssh -i mykey.pem -o StrictHostKeyChecking=no" repo/ ubuntu@${SERVER_IP}:/var/www/html/
+                # Sync repo to EC2 using rsync (SSH config handles host checking)
+                rsync -avz --delete -e "ssh -i mykey.pem" repo/ ubuntu@${SERVER_IP}:/var/www/html/
                 '''
             }
         }
+
     } // end stages
 } // end pipeline
 
