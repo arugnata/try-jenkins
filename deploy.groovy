@@ -14,7 +14,7 @@ pipeline {
         string(
             name: 'SERVER_IP',
             defaultValue: '44.223.7.233',
-            description: 'Target Server'
+            description: 'Target EC2 Server IP'
         )
     }
 
@@ -32,7 +32,7 @@ pipeline {
         stage('Checkout Code from GitHub') {
             steps {
                 sh '''
-                # Pull code from your new GitHub repo
+                # Clone your GitHub repo
                 git clone -b main https://github.com/arugnata/try-jenkins.git repo
                 '''
             }
@@ -44,7 +44,8 @@ pipeline {
                 mkdir -p ~/.ssh
                 chmod 700 ~/.ssh
 
-                echo -e "Host *\\n\\tStrictHostKeyChecking no\\n" > ~/.ssh/config
+                # Correct SSH config to avoid host verification errors
+                echo -e "Host *\\n\\tStrictHostKeyChecking no\\n\\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
                 chmod 600 ~/.ssh/config
 
                 touch ~/.ssh/known_hosts
@@ -56,6 +57,7 @@ pipeline {
         stage('SSH Key Access') {
             steps {
                 sh '''
+                # Decode Jenkins stored SSH key
                 echo "$SSH_KEY64" | base64 -d > mykey.pem
                 chmod 400 mykey.pem
 
@@ -67,8 +69,8 @@ pipeline {
         stage('Deploy Code to Server') {
             steps {
                 sh '''
-                # Sync GitHub code to EC2 /var/www/html
-                rsync -avz --delete -e "ssh -i mykey.pem" repo/ ubuntu@${SERVER_IP}:/var/www/html/
+                # Sync repo to EC2 using rsync with correct SSH options
+                rsync -avz --delete -e "ssh -i mykey.pem -o StrictHostKeyChecking=no" repo/ ubuntu@${SERVER_IP}:/var/www/html/
                 '''
             }
         }
