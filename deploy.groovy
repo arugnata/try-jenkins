@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        SSH_KEY64 = credentials('SSH_KEY64')
+        SSH_KEY64 = credentials('SSH_KEY64') // Your Jenkins stored SSH key in base64
     }
 
     parameters {
@@ -38,29 +38,14 @@ pipeline {
             }
         }
 
-        stage('Configure SSH') {
-            steps {
-                sh '''
-                mkdir -p ~/.ssh
-                chmod 700 ~/.ssh
-
-                # SSH config to skip host verification
-                echo -e "Host *\\n\\tStrictHostKeyChecking no\\n\\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
-                chmod 600 ~/.ssh/config
-
-                touch ~/.ssh/known_hosts
-                chmod 600 ~/.ssh/known_hosts
-                '''
-            }
-        }
-
-        stage('SSH Key Access') {
+        stage('Setup SSH Key') {
             steps {
                 sh '''
                 # Decode Jenkins stored SSH key
                 echo "$SSH_KEY64" | base64 -d > mykey.pem
                 chmod 400 mykey.pem
 
+                # Remove existing entry if host exists
                 ssh-keygen -R ${SERVER_IP} || true
                 '''
             }
@@ -69,12 +54,11 @@ pipeline {
         stage('Deploy Code to Server') {
             steps {
                 sh '''
-                # Sync repo to EC2 using rsync (SSH config handles host checking)
-                rsync -avz --delete -e "ssh -i mykey.pem" repo/ ubuntu@${SERVER_IP}:/var/www/html/
+                # Deploy repo using rsync with correct SSH command
+                rsync -avz --delete -e "ssh -i mykey.pem -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" repo/ ubuntu@${SERVER_IP}:/var/www/html/
                 '''
             }
         }
-
-    } // end stages
-} // end pipeline
+    }
+}
 
