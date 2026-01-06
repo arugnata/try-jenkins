@@ -13,7 +13,7 @@ pipeline {
     parameters {
         string(
             name: 'SERVER_IP',
-            defaultValue: '44.223.7.233',
+            defaultValue: '98.92.192.249',
             description: 'Target EC2 Server IP'
         )
     }
